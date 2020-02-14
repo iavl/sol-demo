@@ -4,7 +4,7 @@ contract MsgRecall {
     // 事件
     // 每次成功的上链记录，都会创建一个Recall事件
     // 可以通过txHash查询对应的事件
-    event Recall(address from, address to, string pubkey, uint timestamp);
+    event Recall(address from, address to, uint timestamp, bytes32 pk);
 
 
     // 用户授权的结构体, 表示from发起一次授权请求，删除和to的聊天记录
@@ -15,8 +15,7 @@ contract MsgRecall {
     // @timestamp 表示记录时间
 
     struct st {
-        byte t;
-        string pubkey;
+        bytes32 pubkey;
         uint timestamp;
     }
 
@@ -24,7 +23,7 @@ contract MsgRecall {
     mapping (address => mapping (address => st)) Mapping;
 
     // 消息撤回记录上链接口，r,s,v表示用户授权签名
-    function recall(address from, address to, string memory pubkey, byte t, uint timestamp, bytes32 r, bytes32 s, byte v) public {
+    function recall(address from, address to, uint timestamp, bytes32 pk, bytes32 s, byte v) public {
         // 验证from和pubkey是否一致
 
         // 验证用户授权的签名
@@ -32,14 +31,14 @@ contract MsgRecall {
         //if (addr != from) revert(); // 如果验签不通过，则回滚
 
         st memory sp;
-        sp.pubkey = pubkey;
+        // sp.pubkey = pk;
         sp.timestamp = timestamp;
-        sp.t = t;
+        // sp.t = t;
         // 记录from, to和timestamp
         Mapping[to][from] = sp;
 
         // 创建一个Recall事件，事件内容包含发起地址和对方地址
-        emit Recall(from, to, pubkey, timestamp);
+        emit Recall(from, to, timestamp, pk);
     }
 
     // 使用ecrecover恢复出公钥
@@ -53,10 +52,9 @@ contract MsgRecall {
     }
 
     // 查询接口
-    function queryParams(address to, address from) public  returns (string memory pubkey, byte t,  uint timestamp) {
+    function queryParams(address to, address from) public  returns (bytes32 pubkey, uint timestamp) {
         st memory s = Mapping[to][from];
         pubkey = s.pubkey;
         timestamp = s.timestamp;
-        t = s.t;
     }
 }
